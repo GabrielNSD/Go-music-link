@@ -5,8 +5,8 @@ Why:
 Describe the motivation. If this PR is a implementation from a issue, mention it.
 
 How:
-- [] Describe the activities you did or did't with a checklist
-- [] Mark the things you did
+- [ ] Describe the activities you did or did't with a checklist
+- [X] Mark the things you did
 
 Tests:
 Beside the automatized tests, how did you test this changes?
