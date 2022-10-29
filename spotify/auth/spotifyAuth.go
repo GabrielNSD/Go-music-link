@@ -24,7 +24,6 @@ type SpotifyToken struct {
 }
 
 func GetToken() SpotifyToken {
-	fmt.Println("SpotifyAuth entry")
 	err := godotenv.Load("local.env")
 	if err != nil {
 		log.Fatalf("Error loading env file: %s", err)
