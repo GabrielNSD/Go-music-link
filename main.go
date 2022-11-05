@@ -8,11 +8,10 @@ import (
 
 func main() {
 	fmt.Println("Hello music")
-	spotifyParser.ParseSpotifyUrl("http://open.spotify.com/track/6rqhFgbbKwnb9MLmUQDhG6")
-	testInfo := spotifyParser.TrackInfo{
-		Name:   "cozy",
-		Album:  "reinascence",
-		Artist: "beyonce",
-	}
-	spotifyParser.SearchOnSpotify(testInfo)
+	// testInfo := spotifyParser.TrackInfo{
+	// 	Name:   "cuff it",
+	// 	Album:  "reinascence",
+	// 	Artist: "beyonce",
+	// }
+	spotifyParser.SearchOnSpotify(spotifyParser.ParseSpotifyUrl("http://open.spotify.com/track/6rqhFgbbKwnb9MLmUQDhG6"))
 }

@@ -2,6 +2,7 @@ package spotifyParser
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	spotifyAuth "goMusicLinkApi/spotify/auth"
 	"io/ioutil"
@@ -17,11 +18,29 @@ type TrackInfo struct {
 	Artist string
 }
 
-func ParseSpotifyUrl(url string) {
+func ParseSpotifyUrl(url string) TrackInfo {
 	fmt.Println("url: ", url)
 	trackId := strings.Split(url, "track/")[1]
-	getTrackInfo(trackId)
+	return getTrackInfo(trackId)
 
+}
+
+type ParsedAlbum struct {
+	Name string `json:"name"`
+}
+
+type ParsedArtist struct {
+	Href string `json:"href"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Uri  string `json:"uri"`
+}
+
+type ParsedTrack struct {
+	Album   ParsedAlbum    `json:"album"`
+	Artists []ParsedArtist `json:"artists"`
+	Name    string         `json:"name"`
 }
 
 // http client to make requests
@@ -35,7 +54,7 @@ func client() *http.Client {
 	return &client
 }
 
-func getTrackInfo(trackId string) {
+func getTrackInfo(trackId string) TrackInfo {
 	url := "https://api.spotify.com/v1/tracks/" + trackId
 
 	token := spotifyAuth.GetToken().AccessToken
@@ -63,10 +82,19 @@ func getTrackInfo(trackId string) {
 		log.Fatalln(err)
 	}
 
-	// The response returns a json containing multiple objects.
-	// The objective is to return the most important peaces of information to search on other platforms
-	// see details at: https://developer.spotify.com/documentation/web-api/reference/#/operations/get-track
-	fmt.Println(string(body))
+	var parsedTrack ParsedTrack
+	err = json.Unmarshal(body, &parsedTrack)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var result = TrackInfo{
+		Name:   parsedTrack.Name,
+		Album:  parsedTrack.Album.Name,
+		Artist: parsedTrack.Artists[0].Name,
+	}
+
+	return result
 }
 
 func SearchOnSpotify(info TrackInfo) {
@@ -76,9 +104,14 @@ func SearchOnSpotify(info TrackInfo) {
 
 	client := *client()
 
-	queryPrams := "query=tack%3A" + info.Name + "+artist%3A" + info.Artist + "&type=track&offset=0&limit=20"
+	q := strings.ReplaceAll("q="+"track:"+info.Name+"%20artist:"+info.Artist, " ", "%20")
+	typeParam := "&type=track"
 
-	request, err := http.NewRequest("GET", url+queryPrams, bytes.NewBuffer(nil))
+	queryParams := q + typeParam
+
+	fmt.Println("Param", queryParams)
+
+	request, err := http.NewRequest("GET", url+queryParams, bytes.NewBuffer(nil))
 	request.Header.Add("Authorization", "Bearer "+token)
 	request.Header.Add("Content-type", "application/json")
 
@@ -98,5 +131,6 @@ func SearchOnSpotify(info TrackInfo) {
 		log.Fatalln(err)
 	}
 
+	fmt.Println("search result")
 	fmt.Println(string(body))
 }
