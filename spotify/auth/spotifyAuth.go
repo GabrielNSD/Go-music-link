@@ -23,10 +23,11 @@ type SpotifyToken struct {
 	ExpiresIn   uint   `json:"expires_in"`
 }
 
-func GetToken() SpotifyToken {
+func GetToken() (*SpotifyToken, error) {
 	err := godotenv.Load("local.env")
 	if err != nil {
 		log.Fatalf("Error loading env file: %s", err)
+		return nil, err
 	}
 	clientId := os.Getenv("SPOTIFY_CLIENT_ID")
 	clientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
@@ -52,11 +53,13 @@ func GetToken() SpotifyToken {
 
 	if err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 
 	resp, err := client.Do(request)
 	if err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -64,15 +67,17 @@ func GetToken() SpotifyToken {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 
 	var token SpotifyToken
 	err = json.Unmarshal(body, &token)
 	if err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 
 	fmt.Printf("%+v\n", token)
 
-	return token
+	return &token, nil
 }

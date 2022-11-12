@@ -57,13 +57,17 @@ func client() *http.Client {
 func getTrackInfo(trackId string) TrackInfo {
 	url := "https://api.spotify.com/v1/tracks/" + trackId
 
-	token := spotifyAuth.GetToken().AccessToken
+	token, err := spotifyAuth.GetToken()
+
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	client := *client()
 
 	request, err := http.NewRequest("GET", url, bytes.NewBuffer(nil))
 
-	request.Header.Add("Authorization", "Bearer "+token)
+	request.Header.Add("Authorization", "Bearer "+token.AccessToken)
 	request.Header.Add("Content-type", "application/json")
 
 	if err != nil {
@@ -100,7 +104,11 @@ func getTrackInfo(trackId string) TrackInfo {
 func SearchOnSpotify(info TrackInfo) {
 	url := "https://api.spotify.com/v1/search?"
 
-	token := spotifyAuth.GetToken().AccessToken
+	token, err := spotifyAuth.GetToken()
+
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	client := *client()
 
@@ -112,7 +120,7 @@ func SearchOnSpotify(info TrackInfo) {
 	fmt.Println("Param", queryParams)
 
 	request, err := http.NewRequest("GET", url+queryParams, bytes.NewBuffer(nil))
-	request.Header.Add("Authorization", "Bearer "+token)
+	request.Header.Add("Authorization", "Bearer "+token.AccessToken)
 	request.Header.Add("Content-type", "application/json")
 
 	if err != nil {
