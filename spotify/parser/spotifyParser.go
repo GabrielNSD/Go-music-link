@@ -2,6 +2,7 @@ package spotifyParser
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	spotifyAuth "goMusicLinkApi/spotify/auth"
 	"io/ioutil"
@@ -17,34 +18,56 @@ type TrackInfo struct {
 	Artist string
 }
 
-func ParseSpotifyUrl(url string) {
+func ParseSpotifyUrl(url string) TrackInfo {
 	fmt.Println("url: ", url)
 	trackId := strings.Split(url, "track/")[1]
-	getTrackInfo(trackId)
+	return getTrackInfo(trackId)
 
+}
+
+type ParsedAlbum struct {
+	Name string `json:"name"`
+}
+
+type ParsedArtist struct {
+	Href string `json:"href"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Uri  string `json:"uri"`
+}
+
+type ParsedTrack struct {
+	Album   ParsedAlbum    `json:"album"`
+	Artists []ParsedArtist `json:"artists"`
+	Name    string         `json:"name"`
 }
 
 // http client to make requests
 // TODO: evaluate the feasability to use same client to make all requests to spotify
-func client() *http.Client {
+func client() http.Client {
 	timeout := time.Duration(5 * time.Second)
 	client := http.Client{
 		Timeout: timeout,
 	}
 
-	return &client
+	return client
 }
 
-func getTrackInfo(trackId string) {
+func getTrackInfo(trackId string) TrackInfo {
 	url := "https://api.spotify.com/v1/tracks/" + trackId
 
-	token := spotifyAuth.GetToken().AccessToken
+	token, err := spotifyAuth.GetToken()
 
-	client := *client()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client := client()
 
 	request, err := http.NewRequest("GET", url, bytes.NewBuffer(nil))
 
-	request.Header.Add("Authorization", "Bearer "+token)
+	request.Header.Add("Authorization", "Bearer "+token.AccessToken)
 	request.Header.Add("Content-type", "application/json")
 
 	if err != nil {
@@ -63,23 +86,43 @@ func getTrackInfo(trackId string) {
 		log.Fatalln(err)
 	}
 
-	// The response returns a json containing multiple objects.
-	// The objective is to return the most important peaces of information to search on other platforms
-	// see details at: https://developer.spotify.com/documentation/web-api/reference/#/operations/get-track
-	fmt.Println(string(body))
+	var parsedTrack ParsedTrack
+	err = json.Unmarshal(body, &parsedTrack)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var result = TrackInfo{
+		Name:   parsedTrack.Name,
+		Album:  parsedTrack.Album.Name,
+		Artist: parsedTrack.Artists[0].Name,
+	}
+	fmt.Println("result", result)
+	return result
 }
 
+// Searches a track on spotify from TrackInfo
+// TODO: implement a way to search for titles like ' Speak to me - 2011 remastered version'. If searched like this it will not return a result
 func SearchOnSpotify(info TrackInfo) {
 	url := "https://api.spotify.com/v1/search?"
 
-	token := spotifyAuth.GetToken().AccessToken
+	token, err := spotifyAuth.GetToken()
 
-	client := *client()
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	queryPrams := "query=tack%3A" + info.Name + "+artist%3A" + info.Artist + "&type=track&offset=0&limit=20"
+	client := client()
 
-	request, err := http.NewRequest("GET", url+queryPrams, bytes.NewBuffer(nil))
-	request.Header.Add("Authorization", "Bearer "+token)
+	q := strings.ReplaceAll("q="+"track:"+info.Name+"%20artist:"+info.Artist+"%20album:"+info.Album, " ", "%20")
+	typeParam := "&type=track"
+
+	queryParams := q + typeParam
+
+	fmt.Println("Param", queryParams)
+
+	request, err := http.NewRequest("GET", url+queryParams, bytes.NewBuffer(nil))
+	request.Header.Add("Authorization", "Bearer "+token.AccessToken)
 	request.Header.Add("Content-type", "application/json")
 
 	if err != nil {
@@ -98,5 +141,6 @@ func SearchOnSpotify(info TrackInfo) {
 		log.Fatalln(err)
 	}
 
+	fmt.Println("search result")
 	fmt.Println(string(body))
 }
