@@ -3,7 +3,6 @@ package spotifyAuth
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -76,8 +75,6 @@ func GetToken() (*SpotifyToken, error) {
 		log.Fatalln(err)
 		return nil, err
 	}
-
-	fmt.Printf("%+v\n", token)
 
 	return &token, nil
 }

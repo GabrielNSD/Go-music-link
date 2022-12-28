@@ -45,13 +45,13 @@ type ParsedTrack struct {
 
 // http client to make requests
 // TODO: evaluate the feasability to use same client to make all requests to spotify
-func client() *http.Client {
+func client() http.Client {
 	timeout := time.Duration(5 * time.Second)
 	client := http.Client{
 		Timeout: timeout,
 	}
 
-	return &client
+	return client
 }
 
 func getTrackInfo(trackId string) TrackInfo {
@@ -63,7 +63,7 @@ func getTrackInfo(trackId string) TrackInfo {
 		log.Fatalln(err)
 	}
 
-	client := *client()
+	client := client()
 
 	request, err := http.NewRequest("GET", url, bytes.NewBuffer(nil))
 
@@ -97,10 +97,12 @@ func getTrackInfo(trackId string) TrackInfo {
 		Album:  parsedTrack.Album.Name,
 		Artist: parsedTrack.Artists[0].Name,
 	}
-
+	fmt.Println("result", result)
 	return result
 }
 
+// Searches a track on spotify from TrackInfo
+// TODO: implement a way to search for titles like ' Speak to me - 2011 remastered version'. If searched like this it will not return a result
 func SearchOnSpotify(info TrackInfo) {
 	url := "https://api.spotify.com/v1/search?"
 
@@ -110,9 +112,9 @@ func SearchOnSpotify(info TrackInfo) {
 		log.Fatalln(err)
 	}
 
-	client := *client()
+	client := client()
 
-	q := strings.ReplaceAll("q="+"track:"+info.Name+"%20artist:"+info.Artist, " ", "%20")
+	q := strings.ReplaceAll("q="+"track:"+info.Name+"%20artist:"+info.Artist+"%20album:"+info.Album, " ", "%20")
 	typeParam := "&type=track"
 
 	queryParams := q + typeParam
