@@ -47,7 +47,6 @@ func getTokenFromDB() *DatabaseToken {
 	var token DatabaseToken
 	err = db.QueryRow(context.Background(), "select access_token, token_type, scope, expiration, refresh_token from tokens where service_name=$1", serviceName).Scan(&token.AccessToken, &token.TokenType, &token.Scope, &token.Expiration, &token.RefreshToken)
 	if err != nil {
-		log.Fatal(err)
 		return nil
 	}
 
@@ -56,7 +55,6 @@ func getTokenFromDB() *DatabaseToken {
 	fmt.Println(token.Expiration)
 
 	if now.After(token.Expiration) {
-		fmt.Println("expired!!!!!!!!!")
 		return nil
 	}
 
@@ -74,20 +72,19 @@ func writeTokenToDB(token *SpotifyToken) {
 
 	expirationTime := time.Now().Add(time.Second * time.Duration(token.ExpiresIn))
 
-	commandTag, err := db.Exec(context.Background(), "update tokens set access_token=$1, token_type=$2, scope=$3, expiration=$4, refresh_token=$5 where service_name=$6", token.AccessToken, token.TokenType, "", expirationTime, "", "spotify")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	fmt.Println(commandTag)
-
-	if commandTag.RowsAffected() != 1 {
-		fmt.Println("running")
-		_, errInsert := db.Exec(context.Background(), "insert into tokens(service_name, access_token, token_type, scope, expiration, refresh_token) values($1, $2, $3, $4, $5, $6)", "spotify", token.AccessToken, token.TokenType, "", expirationTime, "")
-		if errInsert != nil {
-			log.Fatalln(errInsert)
-		}
+	commandTag, err := db.Exec(context.Background(), "insert into tokens(service_name, access_token, token_type, scope, expiration, refresh_token) values($1, $2, $3, $4, $5, $6)", "spotify", token.AccessToken, token.TokenType, "", expirationTime, "")
+	if err != nil {
+		fmt.Println(err)
 	}
 
+	// if the insertion was not possible, update existing token data
+	if commandTag.RowsAffected() != 1 {
+		_, err := db.Exec(context.Background(),
+			"update tokens set access_token=$1, token_type=$2, scope=$3, expiration=$4, refresh_token=$5 where service_name=$6", token.AccessToken, token.TokenType, "", expirationTime, "", "spotify")
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 }
 
 func requestNewToken() (*SpotifyToken, error) {
@@ -137,6 +134,7 @@ func requestNewToken() (*SpotifyToken, error) {
 		return nil, err
 	}
 
+	// TODO: check if the returned json does contain only an error key
 	var token SpotifyToken
 	err = json.Unmarshal(body, &token)
 	if err != nil {
@@ -148,8 +146,6 @@ func requestNewToken() (*SpotifyToken, error) {
 }
 
 func GetToken() (*SpotifyToken, error) {
-	//TODO: check for the existence of a token in database before making a request to auth api. If there is one, return it.
-	// if there is a token and it is not valid anymore, get a new one and update it
 	dbToken := getTokenFromDB()
 	if dbToken != nil {
 		var token SpotifyToken
@@ -160,60 +156,13 @@ func GetToken() (*SpotifyToken, error) {
 		fmt.Println("returning from DB")
 		return &token, nil
 	}
-	err := godotenv.Load("local.env")
+
+	token, err := requestNewToken()
 	if err != nil {
-		log.Fatalf("Error loading env file: %s", err)
-		return nil, err
-	}
-	clientId := os.Getenv("SPOTIFY_CLIENT_ID")
-	clientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
-
-	apiUrl := "https://accounts.spotify.com/api/token"
-
-	encodedSecrets := base64.StdEncoding.EncodeToString([]byte(clientId + ":" + clientSecret))
-
-	formData := url.Values{
-		"grant_type": {"client_credentials"},
+		log.Fatal(err)
 	}
 
-	timeout := time.Duration(5 * time.Second)
-	client := http.Client{
-		Timeout: timeout,
-	}
+	writeTokenToDB(token)
 
-	request, err := http.NewRequest("POST", apiUrl, strings.NewReader((formData.Encode())))
-
-	request.Header.Add("Accept", "application/json")
-	request.Header.Add("Authorization", "Basic "+encodedSecrets)
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	if err != nil {
-		log.Fatalln(err)
-		return nil, err
-	}
-
-	resp, err := client.Do(request)
-	if err != nil {
-		log.Fatalln(err)
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln(err)
-		return nil, err
-	}
-
-	var token SpotifyToken
-	err = json.Unmarshal(body, &token)
-	if err != nil {
-		log.Fatalln(err)
-		return nil, err
-	}
-
-	//TODO: after getting a new token, write it in database
-	writeTokenToDB(&token)
-	return &token, nil
+	return token, nil
 }
