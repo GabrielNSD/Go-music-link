@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	spotifyParser "goMusicLinkApi/spotify/parser"
+	"github.com/GabrielNSD/Go-music-link-api/spotify/parser"
 )
 
 func main() {

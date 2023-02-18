@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	spotifyAuth "goMusicLinkApi/spotify/auth"
+	"github.com/GabrielNSD/Go-music-link-api/spotify/auth"
 	"io/ioutil"
 	"log"
 	"net/http"
