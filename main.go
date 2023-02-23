@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 
+	"github.com/GabrielNSD/Go-music-link-api/internal/dto"
 	"github.com/GabrielNSD/Go-music-link-api/spotify/parser"
 )
 
 func main() {
 	fmt.Println("Hello music")
-	testInfo := spotifyParser.TrackInfo{
+	testInfo := dto.TrackInfo{
 		Name:   "cuff it",
 		Album:  "renaissance",
 		Artist: "beyonce",

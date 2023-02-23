@@ -3,10 +3,12 @@ module github.com/GabrielNSD/Go-music-link-api
 go 1.18
 
 require (
+	github.com/go-chi/chi v1.5.1
 	github.com/go-chi/jwtauth v1.2.0
 	github.com/joho/godotenv v1.4.0
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.1
+	gorm.io/gorm v1.24.5
 )
 
 require (
@@ -14,6 +16,8 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/goccy/go-json v0.3.5 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/lestrrat-go/backoff/v2 v2.0.7 // indirect
 	github.com/lestrrat-go/httpcc v1.0.0 // indirect
 	github.com/lestrrat-go/iter v1.0.0 // indirect

@@ -1,23 +1,22 @@
-package spotifyParser
+package spotify
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/GabrielNSD/Go-music-link-api/internal/dto"
+	"github.com/GabrielNSD/Go-music-link-api/spotify/auth"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/GabrielNSD/Go-music-link-api/internal/dto"
-	"github.com/GabrielNSD/Go-music-link-api/spotify/auth"
 )
 
-func ParseSpotifyUrl(url string) dto.TrackInfo {
+func ParseSpotifyUrl(url, token string) dto.TrackInfo {
 	fmt.Println("url: ", url)
 	trackId := strings.Split(url, "track/")[1]
-	return getTrackInfo(trackId)
+	return getTrackInfo(trackId, token)
 
 }
 
@@ -50,20 +49,20 @@ func client() http.Client {
 	return client
 }
 
-func getTrackInfo(trackId string) dto.TrackInfo {
+func getTrackInfo(trackId, token string) dto.TrackInfo {
 	url := "https://api.spotify.com/v1/tracks/" + trackId
 
-	token, err := spotifyAuth.GetToken()
+	// token, err := spotifyAuth.GetToken()
 
-	if err != nil {
-		log.Fatalln(err)
-	}
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
 
 	client := client()
 
 	request, err := http.NewRequest("GET", url, bytes.NewBuffer(nil))
 
-	request.Header.Add("Authorization", "Bearer "+token.AccessToken)
+	request.Header.Add("Authorization", "Bearer "+token)
 	request.Header.Add("Content-type", "application/json")
 
 	if err != nil {
@@ -97,7 +96,7 @@ func getTrackInfo(trackId string) dto.TrackInfo {
 	return result
 }
 
-// Searches a track on spotify from TrackInfo
+// Searches a track on spotify from dto.TrackInfo
 // TODO: implement a way to search for titles like ' Speak to me - 2011 remastered version'. If searched like this it will not return a result
 func SearchOnSpotify(info dto.TrackInfo) {
 	url := "https://api.spotify.com/v1/search?"
